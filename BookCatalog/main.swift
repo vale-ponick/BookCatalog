@@ -114,8 +114,8 @@ func selectGenre() -> Genre? {
       history
       it
       fantasy
-    """)
-    print("📝 Enter genre: ", terminator: "")
+    📝 Enter genre: 
+    """, terminator: "")
     
     guard let input = readLine()?.trimmingCharacters(in: .whitespaces), !input.isEmpty else {
         print("❌ Genre cannot be empty")
