@@ -6,20 +6,20 @@
 
 import Foundation
 
-enum Genre: String {
-    case fantastic = "fantastic"  // исправил опечатки
+enum Genre: String { // 1️⃣ Импорты и модель данных
+    case fantastic = "fantastic"  // 🔹 тип жанра с rawValue - позволяет хранить и выводить название жанра
     case detective = "detective"
     case history = "history"
-    case it = "it"               // переименовал в it
-    case fantasy = "fantasy"     // исправил опечатку
+    case it = "it"
+    case fantasy = "fantasy"
 }
 
-enum BookType {
+enum BookType {                  // 🔹 тип книги с ассоциированным значением
     case paper
-    case audio(duration: Double)
+    case audio(duration: Double) // показывает, как enum может хранить данные
 }
 
-struct Book {
+struct Book {                   // 🔹 сущность "книга" -  чистое описание данных, без логики
     let title: String
     let author: String
     let year: Int
@@ -30,9 +30,9 @@ struct Book {
     var isAvailable: Bool
 }
 
-enum Command: String {
-    case add = "add book"
-    case delete = "delete book"
+enum Command: String { // 2️⃣ Команды пользователя
+    case add = "add book"       // Raw value — строка, которую вводит user
+    case delete = "delete book" // Типобезопасность (нельзя ошибиться в написании команды)
     case showAll = "show all books"
     case showAvailable = "show available book"
     case showByGenre = "show by genre"
@@ -40,12 +40,12 @@ enum Command: String {
     case exit = "exit"
 }
 
-class BookShelf {
-    private(set) var books: [Book] = []
+class BookShelf { // 3️⃣ Бизнес-логика: класс BookShelf
+    private(set) var books: [Book] = [] // 🔹 инкапсуляция: массив скрыт от внешнего мира
     
-    func addBook(title: String, author: String, year: Int, pages: Int, genre: Genre, type: BookType, isAvailable: Bool) {
+    func addBook(title: String, author: String, year: Int, pages: Int, genre: Genre, type: BookType, isAvailable: Bool) { // создание и добавление
         let trimmed = title.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else {
+        guard !trimmed.isEmpty else { // защита от пустого названия
             print("❌ Title cannot be empty")
             return
         }
@@ -62,7 +62,7 @@ class BookShelf {
         print("✅ Book added successfully!")
     }
     
-    func showAllBooks(_ books: [Book], title: String) {
+    func showAllBooks(_ books: [Book], title: String) { // универсальный метод печати (DRY)
         guard !books.isEmpty else {
             print("\(title)")
             return
@@ -81,24 +81,24 @@ class BookShelf {
         }
     }
     
-    func showAvailable() {
+    func showAvailable() { // фильтрация
         let available = books.filter { $0.isAvailable }
         showAllBooks(available, title: "✅ Available books")
     }
     
-    func showByGenre(_ genre: Genre) {
-        let filtered = books.filter { $0.genre == genre }
+    func showByGenre(_ genre: Genre) { // фильтрация
+        let filtered = books.filter { $0.genre == genre } // функциональный стиль
         showAllBooks(filtered, title: "📚 \(genre.rawValue.capitalized) books")
     }
     
-    func delete(at index: Int) -> Bool {
-        guard books.indices.contains(index) else { return false }
+    func delete(at index: Int) -> Bool { //  работа по индексу
+        guard books.indices.contains(index) else { return false } // безопасная проверка индекса
         let removed = books.remove(at: index)
         print("🗑️ Deleted: \"\(removed.title)\"")
         return true
     }
     
-    func toggleStatus(at index: Int) -> Bool {
+    func toggleStatus(at index: Int) -> Bool { //  работа по индексу
         guard books.indices.contains(index) else { return false }
         books[index].isAvailable.toggle()
         let status = books[index].isAvailable ? "✅ available" : "❌ unavailable"
@@ -106,6 +106,11 @@ class BookShelf {
         return true
     }
 }
+/* 4️⃣ Вспомогательные функции ввода
+ - Вынесены для чистоты main
+ - Возвращают nil при ошибке + печатают сообщение
+ - Один раз написаны — много раз используются */
+
 func selectGenre() -> Genre? {
     print("""
     📚 Genres:
@@ -176,7 +181,7 @@ func readInt(prompt: String) -> Int? {
     return number
 }
 
-// MARK: - Основная программа
+// MARK: - 5️⃣ Основная программа
 let shelf = BookShelf()
 
 print("""
@@ -193,18 +198,19 @@ Commands:
 while true {
     print("\n> ", terminator: "")
     guard let input = readLine()?.trimmingCharacters(in: .whitespaces), !input.isEmpty else { continue }
+    // guard let input — безопасное чтение
     
     if input == "exit" {
         print("👋 Bye, bro!")
         break
     }
     
-    guard let command = Command(rawValue: input) else {
+    guard let command = Command(rawValue: input) else { // Command(rawValue:) — преобразование строки в команду
         print("❌ Unknown command. Type 'exit' to quit.")
         continue
     }
     
-    switch command {
+    switch command { // switch — чистая обработка, каждая команда вызывает метод shelf
     case .add:
         print("📝 Enter title: ", terminator: "")
         guard let title = readLine()?.trimmingCharacters(in: .whitespaces), !title.isEmpty else {
@@ -278,3 +284,42 @@ while true {
         break
     }
 }
+/*
+ 🔥 Главное — разделение на слои
+ Слой          Где                                  За что отвечает
+ Модели        enum Genre, BookType, struct Book    Описание данных
+ Команды       enum Command                         Типобезопасные команды пользователя
+ Логика        class BookShelf                      Управление данными (CRUD, фильтрация)
+ Ввод/вывод    select..., read..., main.swift       Общение с user */
+
+/*
+ 🔥 Архитектурные решения (и почему они крутые)
+ Принцип                      Как реализовано                       Зачем
+ Single Responsibility        Book — только данные,
+                              BookShelf — логика,
+                              main — ввод/вывод                     Каждый класс/структура отвечают за одно
+ DRY (Don't Repeat Yourself)  showAllBooks универсальный,
+                              selectGenre, selectBookType вынесены  Нет дублирования кода
+ Типобезопасность             enum Command, enum Genre, BookType    Нельзя ошибиться в строке
+ Инкапсуляция                 private(set) var books                Массив нельзя изменить напрямую
+ Проверка границ              books.indices.contains(index)         Нет краша при неверном индексе
+ Функциональный стиль         filter { $0.isAvailable },
+                              enumerated().forEach                  Короче, читаемее
+ Ранний выход                 guard let, guard !books.isEmpty       Код плоский, легко читать
+ */
+
+/*
+ 🔥 Самый важный принцип — разделение на слои
+
+ user
+       ↓
+    main.swift      (ввод / вывод)
+       ↓
+    Command         (типобезопасные команды)
+       ↓
+    BookShelf       (бизнес-логика)
+       ↓
+    Book / Genre    (данные)
+ Каждый слой не зависит от других.
+ Если захочешь поменять ввод с консоли на GUI — поменяешь только main.swift, остальное останется.
+ */
